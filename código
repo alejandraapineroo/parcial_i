@@ -1,0 +1,60 @@
+import threading
+import queue
+import time
+import random
+
+# Configuración
+COLA_IMAGENES = queue.Queue()
+NUM_ANALISTAS = 3  # Número de analistas automáticos trabajando en paralelo
+
+def satelite_productor(nombre_satelite):
+    """Simula la llegada impredecible de imágenes desde un satélite."""
+    img_id = 1
+    while True:
+        # Llegan imágenes de forma aleatoria (entre 1 y 5 segundos)
+        time.sleep(random.uniform(1, 5))
+        
+        item = f"Imagen_{nombre_satelite}_{img_id}"
+        COLA_IMAGENES.put(item)
+        
+        print(f"[RECEPCION] {item} almacenada. (En espera: {COLA_IMAGENES.qsize()})")
+        img_id += 1
+
+def analista_consumidor(id_analista):
+    """Simula el procesamiento lento y complejo de cada imagen."""
+    while True:
+        # Obtener imagen de la cola
+        imagen = COLA_IMAGENES.get()
+        
+        print(f"[PROCESO] Analista {id_analista} iniciando analisis de {imagen}...")
+        
+        # Simular un cálculo complejo que tarda entre 4 y 10 segundos
+        tiempo_proceso = random.uniform(4, 10)
+        time.sleep(tiempo_proceso)
+        
+        print(f"[LISTO] {imagen} procesada por Analista {id_analista} en {tiempo_proceso:.2f}s.")
+        
+        # Indicar que la tarea ha terminado
+        COLA_IMAGENES.task_done()
+
+# --- EJECUCION DEL SISTEMA ---
+
+print("--- Iniciando Centro de Procesamiento Digital ---")
+
+# Crear hilos para los satélites (Productores)
+satelites = ["Landsat-9", "Sentinel-2", "GOES-R"]
+for s in satelites:
+    t = threading.Thread(target=satelite_productor, args=(s,), daemon=True)
+    t.start()
+
+# Crear hilos para los analistas (Consumidores)
+for i in range(NUM_ANALISTAS):
+    t = threading.Thread(target=analista_consumidor, args=(i+1,), daemon=True)
+    t.start()
+
+# Mantener el programa principal vivo
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("\nDeteniendo el centro de procesamiento...")
